@@ -29,6 +29,8 @@ def channel_type_labels():
     return {
         constants.CHANNEL_TYPE_FEISHU: "Feishu Webhook",
         constants.CHANNEL_TYPE_SERVERCHAN: "ServerChan",
+        constants.CHANNEL_TYPE_SLACK: "Slack Webhook",
+        constants.CHANNEL_TYPE_GOTIFY: "Gotify",
         constants.CHANNEL_TYPE_GENERIC: "Generic Webhook",
     }
 
@@ -206,6 +208,14 @@ def send_channel(channel, text):
         else:
             api_url = "https://sctapi.ftqq.com/{0}.send".format(endpoint)
         _send_form(api_url, {"title": ZH["title"], "desp": text})
+        return True, ""
+
+    if ctype == constants.CHANNEL_TYPE_SLACK:
+        _send_json(endpoint, {"text": text})
+        return True, ""
+
+    if ctype == constants.CHANNEL_TYPE_GOTIFY:
+        _send_form(endpoint, {"title": ZH["title"], "message": text, "priority": 5})
         return True, ""
 
     if ctype == constants.CHANNEL_TYPE_GENERIC:

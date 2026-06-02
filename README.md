@@ -123,6 +123,14 @@
 
   ![Server酱配置示意](docs/readme-assets/image-5.png)
 
+- Slack Incoming Webhook
+
+  在 Slack 应用中启用 Incoming Webhooks，复制工作区生成的 Webhook 地址，在通道类型中选择 `Slack Webhook`。
+
+- Gotify
+
+  在 Gotify 中创建应用并取得 Token，在通道类型中选择 `Gotify`，填写完整消息地址，例如 `https://gotify.example/message?token=...`。
+
 在浏览器控制台中配置：
 
 - 机器名称

@@ -1,6 +1,6 @@
 PLUGIN_ID = 1060123
 PLUGIN_NAME = "Tongzhi Render Notifier"
-PLUGIN_HELP = "Cinema 4D render notifications for Feishu, ServerChan, and other webhook endpoints."
+PLUGIN_HELP = "Cinema 4D render notifications for Feishu, ServerChan, Slack, Gotify, and other webhook endpoints."
 
 SETTINGS_FILENAME = "tongzhi_render_notifier.json"
 RUNTIME_STATE_FILENAME = "runtime_state.json"
@@ -13,6 +13,8 @@ COMMAND_PLUGIN_ID = 1060125
 
 CHANNEL_TYPE_FEISHU = "feishu_webhook"
 CHANNEL_TYPE_SERVERCHAN = "serverchan"
+CHANNEL_TYPE_SLACK = "slack_webhook"
+CHANNEL_TYPE_GOTIFY = "gotify"
 CHANNEL_TYPE_GENERIC = "generic_webhook"
 
 EVENT_RENDER_COMPLETED = "render_completed"
