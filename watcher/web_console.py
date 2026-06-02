@@ -226,7 +226,7 @@ def main(open_browser=True):
         service.start_watcher()
         tray._refresh_icon_state()
     log("web console started: {0}, preview_mode={1}".format(APP_URL, PREVIEW_MODE))
-    if open_browser:
+    if open_browser and not PREVIEW_MODE:
         threading.Timer(0.8, lambda: webbrowser.open(APP_URL)).start()
     try:
         server.serve_forever()
