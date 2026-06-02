@@ -68,7 +68,6 @@ const TEXT = {
 };
 
 const state = {
-  currentPage: "overview",
   config: null,
   history: [],
   selectedChannelIndex: -1,
@@ -78,6 +77,12 @@ const state = {
   notificationDirty: false,
   notificationDefaults: null,
 };
+
+const LOCAL_PREVIEW = window.location.protocol === "file:";
+const previewNow = new Date().toISOString();
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 
 const NOTIFICATION_FIELDS = [
   { key: "event_type", label: TEXT.status, samples: { render_completed: TEXT.renderCompleted, render_timeout: TEXT.renderTimeout, test: TEXT.testMessage } },
@@ -107,7 +112,77 @@ const DEFAULT_NOTIFICATION_TEMPLATES = {
   },
 };
 
+const previewData = {
+  status: {
+    watcher_running: true,
+    autostart_enabled: true,
+    enabled_channel_count: 2,
+    last_event: { time: previewNow, event_type: "render_completed", project_name: "S02_足球_v2.c4d", success: true },
+    state: {
+      machine_name: "home",
+      project_name: "S02_足球_v2.c4d",
+      render_mode: "manual",
+      status: "completed",
+      timeout_seconds: 1800,
+      last_heartbeat_at: previewNow,
+      output_path: "D:/renders/S02",
+    },
+  },
+  config: {
+    machine_name: "home",
+    timeout_seconds: 1800,
+    channels: [
+      { name: "飞书通知", type: "feishu_webhook", endpoint: "demo", enabled: true },
+      { name: "Server酱", type: "serverchan", endpoint: "demo", enabled: true },
+    ],
+    notification: {
+      default_template: "render_completed",
+      templates: clone(DEFAULT_NOTIFICATION_TEMPLATES),
+    },
+    watcher: { poll_interval_seconds: 2, start_with_windows: true },
+  },
+  history: Array.from({ length: 7 }, (_item, index) => ({
+    time: new Date(Date.now() - index * 60000).toISOString(),
+    event_type: index ? "render_completed" : "test",
+    project_name: index ? "S02_足球_v2.c4d" : "配置测试",
+    success: true,
+    message: "通知发送成功",
+  })),
+  logs: {
+    plugin_log: "[16:00:01] plugin heartbeat\n[16:00:03] render state completed",
+    watcher_log: "[16:00:04] watcher poll completed\n[16:00:05] notification sent\n[16:00:06] tray icon refreshed",
+  },
+};
+
 const byId = (id) => document.getElementById(id);
+
+const CHANNEL_TYPE_OPTIONS = {
+  feishu_webhook: {
+    label: "Feishu Webhook",
+    endpointLabel: "Webhook \u5730\u5740",
+    endpointHint: "\u7c98\u8d34\u98de\u4e66\u7fa4\u673a\u5668\u4eba\u7684 Webhook \u5730\u5740\u3002",
+  },
+  serverchan: {
+    label: "ServerChan",
+    endpointLabel: "SendKey \u6216\u63a5\u53e3\u5730\u5740",
+    endpointHint: "\u586b\u5199 Server\u9171 SendKey\uff0c\u6216\u5b8c\u6574\u7684\u53d1\u9001\u63a5\u53e3\u5730\u5740\u3002",
+  },
+  slack_webhook: {
+    label: "Slack Webhook",
+    endpointLabel: "Webhook \u5730\u5740",
+    endpointHint: "\u7c98\u8d34 Slack Incoming Webhook \u5730\u5740\u3002",
+  },
+  gotify: {
+    label: "Gotify",
+    endpointLabel: "Gotify \u6d88\u606f\u63a5\u53e3\u5730\u5740",
+    endpointHint: "\u586b\u5199\u5b8c\u6574\u5730\u5740\uff0c\u4f8b\u5982 https://gotify.example/message?token=...\u3002",
+  },
+  generic_webhook: {
+    label: "Generic Webhook",
+    endpointLabel: "Webhook \u5730\u5740",
+    endpointHint: "\u7c98\u8d34\u63a5\u6536 JSON \u6d88\u606f\u7684\u901a\u7528 Webhook \u5730\u5740\u3002",
+  },
+};
 
 function parseDate(value) {
   if (!value) return null;
@@ -151,12 +226,13 @@ function localizeEventType(value) {
 }
 
 function localizeChannelType(value) {
-  const labels = {
-    feishu_webhook: "Feishu Webhook",
-    serverchan: "ServerChan",
-    generic_webhook: "Generic Webhook",
-  };
-  return labels[value] || value || "\u672a\u8bbe\u7f6e";
+  return CHANNEL_TYPE_OPTIONS[value]?.label || value || "\u672a\u8bbe\u7f6e";
+}
+
+function updateChannelEndpointHelp(value) {
+  const option = CHANNEL_TYPE_OPTIONS[value] || CHANNEL_TYPE_OPTIONS.generic_webhook;
+  byId("channelEndpointLabel").textContent = option.endpointLabel;
+  byId("channelEndpointHint").textContent = option.endpointHint;
 }
 
 function localizeRenderMode(value) {
@@ -227,6 +303,23 @@ function setNotificationDirty(value) {
 }
 
 async function api(path, options = {}) {
+  if (LOCAL_PREVIEW) {
+    const method = options.method || "GET";
+    if (method === "POST" && path === "/api/config") {
+      previewData.config = JSON.parse(options.body);
+      return { ok: true, message: "preview saved" };
+    }
+    if (method === "POST" && path === "/api/watcher/start") previewData.status.watcher_running = true;
+    if (method === "POST" && path === "/api/watcher/stop") previewData.status.watcher_running = false;
+    const localRoutes = {
+      "/api/status": previewData.status,
+      "/api/config": previewData.config,
+      "/api/history": previewData.history,
+      "/api/logs": previewData.logs,
+      "/api/notification-defaults": DEFAULT_NOTIFICATION_TEMPLATES,
+    };
+    return clone(localRoutes[path] || { ok: true, running: previewData.status.watcher_running });
+  }
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
     ...options,
@@ -237,12 +330,6 @@ async function api(path, options = {}) {
     throw new Error(payload.message || payload || `Request failed: ${response.status}`);
   }
   return payload;
-}
-
-function setPage(page) {
-  state.currentPage = page;
-  document.querySelectorAll(".page").forEach((el) => el.classList.toggle("active", el.id === `${page}-page`));
-  document.querySelectorAll(".nav-item").forEach((el) => el.classList.toggle("active", el.dataset.page === page));
 }
 
 function setBusy(busy) {
@@ -291,6 +378,11 @@ function renderOverview(status) {
   byId("metricMode").textContent = localizeRenderMode(runtime.render_mode);
   byId("metricTimeout").textContent = runtime.timeout_seconds ? `${runtime.timeout_seconds} \u79d2` : "-";
   byId("metricRuntime").textContent = runtime.status || "\u672a\u5199\u5165";
+  byId("sessionSummary").textContent = [
+    runtime.machine_name || TEXT.unnamedMachine,
+    localizeRenderMode(runtime.render_mode),
+    runtime.timeout_seconds ? `${runtime.timeout_seconds} 秒超时` : "未设置超时",
+  ].join(" / ");
 
   byId("summaryChannels").textContent = String(status.enabled_channel_count || 0);
   byId("summaryChannelsNote").textContent = channels.length
@@ -308,55 +400,16 @@ function renderOverview(status) {
     byId("summaryLastNote").textContent = TEXT.noNotification;
   }
 
-  setSignal(byId("signalHeartbeat"), runtime.last_heartbeat_at ? 92 : 12);
-  setSignal(byId("signalWatcher"), status.watcher_running ? 88 : 24);
-  setSignal(byId("signalOutput"), runtime.output_path ? 74 : 18);
-
-  const runtimeList = byId("runtimeList");
-  runtimeList.innerHTML = "";
-  [
-    {
-      title: TEXT.watcherLoop,
-      subtitle: TEXT.everyPoll.replace("{0}", String(state.config?.watcher?.poll_interval_seconds || 2)),
-      badge: status.watcher_running ? TEXT.running : TEXT.stopped,
-      tone: status.watcher_running ? "green" : "dark",
-    },
-    {
-      title: TEXT.trayState,
-      subtitle: status.autostart_enabled ? TEXT.trayReadyOn : TEXT.trayReadyOff,
-      badge: TEXT.ready,
-      tone: "dark",
-    },
-    {
-      title: TEXT.pluginLink,
-      subtitle: runtime.last_heartbeat_at ? TEXT.pluginUpdating : TEXT.waitingHeartbeat,
-      badge: runtime.last_heartbeat_at ? TEXT.linked : TEXT.empty,
-      tone: runtime.last_heartbeat_at ? "green" : "dark",
-    },
-  ].forEach((item) => runtimeList.appendChild(makeRuntimeRow(item)));
-
-  const channelStatusList = byId("channelStatusList");
-  channelStatusList.innerHTML = "";
-  const previewChannels = channels.slice(0, 3);
-  while (previewChannels.length < 3) previewChannels.push({ name: TEXT.unnamedSlot, type: "", enabled: false });
-
-  previewChannels.forEach((channel, index) => {
-    const row = document.createElement("div");
-    row.className = "channel-row";
-    row.innerHTML = `
-      <div class="avatar ${index === 0 ? "green" : index === 1 ? "blush" : "dark"}">${(channel.name || TEXT.unnamedSlot).slice(0, 1).toUpperCase()}</div>
-      <div>
-        <strong>${channel.name || TEXT.unnamedSlot}</strong>
-        <p>${channel.type ? `${localizeChannelType(channel.type)} | ${channel.enabled ? TEXT.enabled : TEXT.disabled}` : TEXT.notConfigured}</p>
-      </div>
-      <span class="toggle ${channel.enabled ? "on" : ""}"></span>
-    `;
-    channelStatusList.appendChild(row);
-  });
+  byId("compactWatcherState").textContent = status.watcher_running ? TEXT.running : TEXT.stopped;
+  byId("headerWatcherState").textContent = status.watcher_running ? TEXT.running : TEXT.stopped;
+  byId("compactPluginState").textContent = runtime.last_heartbeat_at ? TEXT.linked : TEXT.waitingHeartbeat;
+  byId("compactChannelState").textContent = status.enabled_channel_count
+    ? `${status.enabled_channel_count} 个通道已启用`
+    : TEXT.channelsNoneEnabled;
 
   const timelineList = byId("timelineList");
   timelineList.innerHTML = "";
-  const recent = [...state.history].slice(-6).reverse();
+  const recent = [...state.history].slice(-4).reverse();
   if (!recent.length) {
     timelineList.innerHTML = `
       <div class="timeline-item">
@@ -373,7 +426,7 @@ function renderOverview(status) {
       const row = document.createElement("div");
       row.className = "timeline-item";
       row.innerHTML = `
-        <span class="dot ${item.success ? "done" : index === 0 ? "alert" : "mute"}"></span>
+        <span class="dot ${item.success ? "done" : index === 0 ? "alert" : "mute"}">${item.success ? "✓" : ""}</span>
         <div>
           <strong>${localizeEventType(item.event_type)}</strong>
           <p>${item.project_name || TEXT.unnamedProject}</p>
@@ -396,14 +449,10 @@ function renderChannels() {
 
   const typeSelect = byId("channelTypeInput");
   if (!typeSelect.dataset.ready) {
-    Object.entries({
-      feishu_webhook: "Feishu Webhook",
-      serverchan: "ServerChan",
-      generic_webhook: "Generic Webhook",
-    }).forEach(([value, label]) => {
+    Object.entries(CHANNEL_TYPE_OPTIONS).forEach(([value, config]) => {
       const option = document.createElement("option");
       option.value = value;
-      option.textContent = label;
+      option.textContent = config.label;
       typeSelect.appendChild(option);
     });
     typeSelect.dataset.ready = "1";
@@ -431,6 +480,7 @@ function renderChannels() {
     byId("channelEndpointInput").value = "";
     byId("channelEnabledInput").checked = true;
   }
+  updateChannelEndpointHelp(byId("channelTypeInput").value);
 
   renderNotificationEditor();
 }
@@ -559,12 +609,12 @@ function renderLogs(logs) {
     });
   }
 
-  const previewLines = [...plugin.split("\n").filter(Boolean).slice(-3), ...watcher.split("\n").filter(Boolean).slice(-5)];
+  const previewLines = [...plugin.split("\n").filter(Boolean).slice(-2), ...watcher.split("\n").filter(Boolean).slice(-2)];
   if (!previewLines.length) {
     consoleEl.innerHTML = `<div class="log-empty">${TEXT.noLogPreview}</div>`;
     return;
   }
-  previewLines.slice(-10).forEach((line) => {
+  previewLines.slice(-4).forEach((line) => {
     const row = document.createElement("div");
     row.className = "log-line";
     row.innerHTML =
@@ -580,6 +630,7 @@ function clearChannelForm() {
   byId("channelTypeInput").value = "feishu_webhook";
   byId("channelEndpointInput").value = "";
   byId("channelEnabledInput").checked = true;
+  updateChannelEndpointHelp(byId("channelTypeInput").value);
   document.querySelectorAll(".channel-list-item").forEach((item) => item.classList.remove("active"));
 }
 
@@ -615,7 +666,6 @@ async function refreshAll() {
   renderLogs(logs);
 
   byId("watcherBtn").textContent = status.watcher_running ? "\u505c\u6b62 Watcher" : "\u542f\u52a8 Watcher";
-  byId("topbarStatus").textContent = status.watcher_running ? TEXT.watcherRunningHint : TEXT.watcherStoppedHint;
 }
 
 async function saveConfig() {
@@ -738,19 +788,48 @@ async function runTick() {
 }
 
 function bindEvents() {
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    item.addEventListener("click", () => setPage(item.dataset.page));
-  });
-
   byId("saveConfigBtn").addEventListener("click", saveConfig);
   byId("notificationSaveBtn").addEventListener("click", saveConfig);
   byId("saveChannelBtn").addEventListener("click", saveChannel);
   byId("deleteChannelBtn").addEventListener("click", deleteChannel);
   byId("newChannelBtn").addEventListener("click", clearChannelForm);
+  byId("channelTypeInput").addEventListener("change", (event) => updateChannelEndpointHelp(event.target.value));
   byId("watcherBtn").addEventListener("click", toggleWatcher);
   byId("testSendBtn").addEventListener("click", testSend);
   byId("tickBtn").addEventListener("click", runTick);
   byId("reloadLogsBtn").addEventListener("click", refreshAll);
+  byId("settingsMenuBtn").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const menu = byId("settingsMenu");
+    const isOpen = menu.classList.toggle("open");
+    byId("settingsMenuBtn").setAttribute("aria-expanded", String(isOpen));
+  });
+  byId("settingsMenu").addEventListener("click", (event) => {
+    const panel = event.target.closest("[data-settings-panel]")?.dataset.settingsPanel;
+    if (!panel) return;
+    openSettings(panel);
+  });
+  document.querySelectorAll(".settings-shortcut").forEach((button) => {
+    button.addEventListener("click", () => openSettings(button.dataset.settingsPanel));
+  });
+  byId("closeSettingsBtn").addEventListener("click", () => byId("settingsModal").close());
+  byId("openHistoryBtn").addEventListener("click", () => byId("historyModal").showModal());
+  byId("openLogsBtn").addEventListener("click", () => byId("logsModal").showModal());
+  document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+    button.addEventListener("click", () => byId(button.dataset.closeDialog).close());
+  });
+  document.querySelectorAll("[data-settings-tab]").forEach((button) => {
+    button.addEventListener("click", () => setSettingsPanel(button.dataset.settingsTab));
+  });
+  document.addEventListener("click", () => {
+    byId("settingsMenu").classList.remove("open");
+    byId("settingsMenuBtn").setAttribute("aria-expanded", "false");
+  });
+  document.querySelectorAll("dialog").forEach((dialog) => {
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  });
   byId("notificationResetBtn").addEventListener("click", () => {
     ensureNotificationConfig();
     const fallback = state.notificationDefaults?.[state.notificationTemplate] || defaultNotificationTemplate(state.notificationTemplate);
@@ -796,9 +875,25 @@ function bindEvents() {
   });
 }
 
+function setSettingsPanel(panel) {
+  document.querySelectorAll("[data-settings-tab]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.settingsTab === panel);
+  });
+  document.querySelectorAll("[data-settings-content]").forEach((content) => {
+    content.classList.toggle("active", content.dataset.settingsContent === panel);
+  });
+}
+
+function openSettings(panel = "basic") {
+  byId("settingsMenu").classList.remove("open");
+  byId("settingsMenuBtn").setAttribute("aria-expanded", "false");
+  setSettingsPanel(panel);
+  byId("settingsModal").showModal();
+}
+
 bindEvents();
 refreshAll();
 setInterval(() => {
-  if (state.currentPage === "channels" || state.busy) return;
+  if (document.querySelector("dialog[open]") || state.busy) return;
   refreshAll();
 }, 3000);

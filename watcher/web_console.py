@@ -27,7 +27,8 @@ from core.service import WatcherService
 
 
 HOST = "127.0.0.1"
-PORT = 37673
+PORT = int(os.environ.get("TONGZHI_PORT", "37673"))
+PREVIEW_MODE = os.environ.get("TONGZHI_PREVIEW_MODE", "").strip() == "1"
 APP_URL = "http://{0}:{1}/".format(HOST, PORT)
 
 
@@ -220,10 +221,11 @@ def main(open_browser=True):
     WebConsoleHandler.script_path = os.path.abspath(__file__)
     server = ThreadingHTTPServer((HOST, PORT), WebConsoleHandler)
     tray = WebConsoleTray(service, server)
-    tray.start()
-    service.start_watcher()
-    tray._refresh_icon_state()
-    log("web console started: {0}".format(APP_URL))
+    if not PREVIEW_MODE:
+        tray.start()
+        service.start_watcher()
+        tray._refresh_icon_state()
+    log("web console started: {0}, preview_mode={1}".format(APP_URL, PREVIEW_MODE))
     if open_browser:
         threading.Timer(0.8, lambda: webbrowser.open(APP_URL)).start()
     try:

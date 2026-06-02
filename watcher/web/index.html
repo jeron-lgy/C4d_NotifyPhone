@@ -7,192 +7,262 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
+  <main class="app-shell">
+    <header class="topbar">
       <div class="brand">
         <div class="brand-mark">T</div>
         <div>
-          <p class="eyebrow">Tongzhi</p>
-          <h1>控制台</h1>
+          <p class="eyebrow">Tongzhi Render Notifier</p>
+          <div class="title-line">
+            <h1>实时渲染通知中心</h1>
+            <span class="live-indicator"><i></i><strong id="headerWatcherState">读取中</strong></span>
+          </div>
         </div>
       </div>
 
-      <nav class="nav-list">
-        <button class="nav-item active" data-page="overview">总览</button>
-        <button class="nav-item" data-page="channels">通道设置</button>
-        <button class="nav-item" data-page="history">通知历史</button>
-        <button class="nav-item" data-page="logs">运行日志</button>
-      </nav>
-    </aside>
+      <div class="topbar-actions">
+        <button class="ghost-btn action-btn" id="testSendBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5"/><path d="m12 7 5 5"/><path d="m4 20 5-1 10-10-4-4L5 15l-1 5Z"/></svg>
+          测试发送
+        </button>
+        <button class="ghost-btn action-btn compact-action" id="tickBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v5"/><path d="M17 15v5"/><path d="M7 9a5 5 0 0 0 5 5h5"/><path d="M17 15a5 5 0 0 0-5-5H7"/><circle cx="7" cy="4" r="2"/><circle cx="17" cy="20" r="2"/></svg>
+          执行检测
+        </button>
+        <button class="primary-btn action-btn" id="watcherBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          启动 Watcher
+        </button>
+        <div class="settings-anchor">
+          <button class="icon-menu-btn" id="settingsMenuBtn" aria-label="打开设置" aria-expanded="false">☰</button>
+          <div class="settings-menu" id="settingsMenu">
+            <p class="eyebrow">设置</p>
+            <button data-settings-panel="basic">基础设置<span>机器与运行参数</span></button>
+            <button data-settings-panel="channels">通知通道<span>飞书、Server酱、Slack、Gotify 与 Webhook</span></button>
+            <button data-settings-panel="notification">通知内容<span>字段、顺序与模板</span></button>
+          </div>
+        </div>
+      </div>
+    </header>
 
-    <main class="main-layout">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">桌面控制台</p>
-          <h2>实时渲染通知中心</h2>
-          <p class="topbar-status" id="topbarStatus">Watcher 状态读取中</p>
+    <section class="overview-status-strip">
+      <article class="status-summary-item">
+        <span class="summary-icon mint">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>
+        </span>
+        <div class="status-summary-copy">
+          <p class="card-label">当前渲染任务</p>
+          <strong id="heroProject">当前没有渲染任务</strong>
+          <span id="sessionSummary">等待任务</span>
         </div>
-        <div class="topbar-actions">
-          <button class="ghost-btn" id="testSendBtn">测试发送</button>
-          <button class="ghost-btn" id="tickBtn">执行一轮检测</button>
-          <button class="primary-btn" id="watcherBtn">启动 Watcher</button>
+        <span class="summary-arrow">›</span>
+      </article>
+
+      <article class="status-summary-item">
+        <span class="summary-icon blue">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="7" rx="1.5"/><rect x="5" y="13" width="14" height="7" rx="1.5"/><path d="M8 7.5h.01"/><path d="M8 16.5h.01"/><path d="M11 7.5h5"/><path d="M11 16.5h5"/></svg>
+        </span>
+        <div class="status-summary-copy">
+          <p class="card-label">已启用通道</p>
+          <strong id="summaryChannels">0</strong>
+          <span id="summaryChannelsNote">暂无通道</span>
         </div>
+      </article>
+
+      <article class="status-summary-item">
+        <span class="summary-icon coral">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>
+        </span>
+        <div class="status-summary-copy">
+          <p class="card-label">最近通知</p>
+          <strong id="summaryLastTime">--:--:--</strong>
+          <span id="summaryLastNote">暂无通知</span>
+        </div>
+      </article>
+
+      <article class="status-summary-item">
+        <span class="summary-icon violet">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5c3-2 5-2 5-2s0 2-2 5l-4 4-4 1 1-4 4-4Z"/><path d="m9 13-3 3"/><path d="m8 17-2 2"/><path d="M15 9h.01"/></svg>
+        </span>
+        <div class="status-summary-copy">
+          <p class="card-label">开机自启</p>
+          <strong id="summaryAutostart">关闭</strong>
+          <span id="summaryAutostartNote">手动启动</span>
+        </div>
+      </article>
+
+      <span class="hidden-metric" id="heroStatus">空闲</span>
+      <span class="hidden-metric" id="metricMachine">-</span>
+      <span class="hidden-metric" id="metricMode">-</span>
+      <span class="hidden-metric" id="metricTimeout">-</span>
+      <span class="hidden-metric" id="metricRuntime">-</span>
+    </section>
+
+    <section class="shortcut-head">
+      <div><p class="eyebrow">快捷设置</p><h3>点击卡片快速调整</h3></div>
+      <span>常用设置已经收进状态卡片</span>
+    </section>
+
+    <section class="core-status-strip">
+      <button class="settings-shortcut" data-settings-panel="basic">
+        <span class="shortcut-icon green">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="m19 13.5 1.2 1-.2 1.4-1.6 1.7-1.4.2-1-.8-1.6.7-.2 1.3-1.1.9h-2.2l-1.1-.9-.2-1.3L8 17l-1 .8-1.4-.2L4 15.9l-.2-1.4 1.2-1v-2l-1.2-1L4 9.1l1.6-1.7L7 7.2l1 .8 1.6-.7.2-1.3 1.1-.9h2.2l1.1.9.2 1.3L16 8l1-.8 1.4.2L20 9.1l.2 1.4-1.2 1v2Z"/></svg>
+        </span>
+        <span class="shortcut-copy"><small>Watcher</small><strong id="compactWatcherState">读取中</strong><em>基础设置</em></span>
+        <span class="shortcut-arrow">↗</span>
+      </button>
+
+      <button class="settings-shortcut" data-settings-panel="basic">
+        <span class="shortcut-icon coral">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13.5a4 4 0 1 1 4-4"/><path d="M16 10.5a4 4 0 1 1-4 4"/><path d="m10 12 4 0"/></svg>
+        </span>
+        <span class="shortcut-copy"><small>插件连接</small><strong id="compactPluginState">等待心跳</strong><em>运行参数</em></span>
+        <span class="shortcut-arrow">↗</span>
+      </button>
+
+      <button class="settings-shortcut" data-settings-panel="channels">
+        <span class="shortcut-icon dark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/><circle cx="8" cy="7" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="11" cy="17" r="1.5"/></svg>
+        </span>
+        <span class="shortcut-copy"><small>通知通道</small><strong id="compactChannelState">读取中</strong><em>编辑路由</em></span>
+        <span class="shortcut-arrow">↗</span>
+      </button>
+
+      <button class="settings-shortcut" data-settings-panel="notification">
+        <span class="shortcut-icon blush">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h10"/><path d="M7 9h10"/><path d="M7 13h6"/><path d="M5 3h14v16H9l-4 3V3Z"/></svg>
+        </span>
+        <span class="shortcut-copy"><small>通知内容</small><strong>模板与字段</strong><em>编辑编排</em></span>
+        <span class="shortcut-arrow">↗</span>
+      </button>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="card timeline-card">
+        <div class="section-head">
+          <h3>最近历史</h3>
+          <button class="text-btn" id="openHistoryBtn">查看更多</button>
+        </div>
+        <div class="timeline" id="timelineList"></div>
+      </div>
+
+      <div class="card logs-card">
+        <div class="section-head">
+          <h3>实时诊断预览</h3>
+          <button class="text-btn" id="openLogsBtn">查看更多</button>
+        </div>
+        <div class="log-debug" id="logDebug"></div>
+        <div class="log-console compact-log-console" id="logConsole"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="app-modal settings-modal" id="settingsModal">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div><p class="eyebrow">设置中心</p><h2>Watcher 设置</h2></div>
+        <button class="close-btn" id="closeSettingsBtn" aria-label="关闭设置">×</button>
       </header>
 
-      <section class="page active" id="overview-page">
-        <section class="hero-grid">
-          <div class="hero-panel">
-            <div class="panel-head">
-              <div>
-                <p class="eyebrow bright">当前会话</p>
-                <h3 id="heroProject">当前没有渲染任务</h3>
-              </div>
-              <span class="status-pill live" id="heroStatus">空闲</span>
-            </div>
+      <nav class="modal-tabs">
+        <button class="active" data-settings-tab="basic">基础设置</button>
+        <button data-settings-tab="channels">通知通道</button>
+        <button data-settings-tab="notification">通知内容</button>
+      </nav>
 
-            <div class="hero-metrics">
-              <article><p>机器名称</p><strong id="metricMachine">-</strong></article>
-              <article><p>渲染模式</p><strong id="metricMode">-</strong></article>
-              <article><p>超时阈值</p><strong id="metricTimeout">-</strong></article>
-              <article><p>运行状态</p><strong id="metricRuntime">-</strong></article>
-            </div>
-
-            <div class="signal-list">
-              <div class="signal-row"><span>插件心跳</span><div class="bar"><i id="signalHeartbeat"></i></div></div>
-              <div class="signal-row"><span>Watcher 状态</span><div class="bar"><i id="signalWatcher"></i></div></div>
-              <div class="signal-row"><span>输出同步</span><div class="bar"><i id="signalOutput"></i></div></div>
-            </div>
-          </div>
-
-          <div class="summary-stack">
-            <article class="summary-card soft"><p class="card-label">已启用通道</p><strong id="summaryChannels">0</strong><span id="summaryChannelsNote">-</span></article>
-            <article class="summary-card coral"><p class="card-label">最近一次通知</p><strong id="summaryLastTime">--:--:--</strong><span id="summaryLastNote">暂无通知</span></article>
-            <article class="summary-card dark"><p class="card-label">开机自启</p><strong id="summaryAutostart">关闭</strong><span id="summaryAutostartNote">手动启动</span></article>
-          </div>
-        </section>
-
-        <section class="content-grid">
-          <div class="card section-card">
-            <div class="section-head"><div><p class="eyebrow">状态</p><h3>Watcher 运行状态</h3></div></div>
-            <div class="runtime-list" id="runtimeList"></div>
-          </div>
-
-          <div class="card section-card">
-            <div class="section-head"><div><p class="eyebrow">通道</p><h3>通知路由</h3></div></div>
-            <div class="channel-list" id="channelStatusList"></div>
-          </div>
-        </section>
-
-        <section class="bottom-grid">
-          <div class="card timeline-card">
-            <div class="section-head"><div><p class="eyebrow">事件</p><h3>最近历史</h3></div></div>
-            <div class="timeline" id="timelineList"></div>
-          </div>
-
-          <div class="card logs-card">
-            <div class="section-head"><div><p class="eyebrow">日志</p><h3>实时诊断预览</h3></div></div>
-            <div class="log-debug" id="logDebug"></div>
-            <div class="log-console" id="logConsole"></div>
-          </div>
-        </section>
+      <section class="settings-panel active" data-settings-content="basic">
+        <div class="panel-intro"><p class="eyebrow">基础设置</p><h3>机器与运行参数</h3></div>
+        <div class="settings-form compact-form">
+          <label>机器名称<input id="machineNameInput" type="text"></label>
+          <label>超时阈值（秒）<input id="timeoutInput" type="number" min="1"></label>
+          <label>轮询间隔（秒）<input id="pollInput" type="number" min="1"></label>
+          <label class="checkbox-row"><input id="autostartInput" type="checkbox">随 Windows 自动启动</label>
+          <button class="primary-btn" id="saveConfigBtn">保存基础设置</button>
+        </div>
       </section>
 
-      <section class="page" id="channels-page">
-        <div class="settings-grid">
-          <div class="card form-card">
-            <p class="eyebrow">基础设置</p>
-            <h3>Watcher 配置</h3>
-            <label>机器名称<input id="machineNameInput" type="text"></label>
-            <label>超时阈值（秒）<input id="timeoutInput" type="number" min="1"></label>
-            <label>轮询间隔（秒）<input id="pollInput" type="number" min="1"></label>
-            <label class="checkbox-row"><input id="autostartInput" type="checkbox">随 Windows 自动启动</label>
-            <button class="primary-btn full" id="saveConfigBtn">保存配置</button>
-          </div>
-
-          <div class="card form-card">
-            <p class="eyebrow">通知通道</p>
-            <h3>通道编辑器</h3>
-            <div class="channel-editor">
-              <div class="channel-list-box" id="channelListBox"></div>
-              <div class="channel-form">
-                <label>通道名称<input id="channelNameInput" type="text"></label>
-                <label>通道类型<select id="channelTypeInput"></select></label>
-                <label>Webhook / SendKey<input id="channelEndpointInput" type="text"></label>
-                <label class="checkbox-row"><input id="channelEnabledInput" type="checkbox">启用此通道</label>
-                <div class="button-row">
-                  <button class="ghost-btn" id="newChannelBtn">新建</button>
-                  <button class="ghost-btn" id="deleteChannelBtn">删除</button>
-                  <button class="primary-btn" id="saveChannelBtn">保存通道</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card form-card notification-card">
-            <p class="eyebrow">通知内容</p>
-            <div class="section-head">
-              <h3>通知信息编排</h3>
-              <span class="dirty-badge" id="notificationDirtyBadge">未保存修改</span>
-            </div>
-            <p class="form-note">可以分别配置渲染完成、超时提醒和测试消息的通知内容。</p>
-
-            <div class="notification-layout">
-              <div class="notification-fields" id="notificationFields"></div>
-
-              <div class="notification-controls">
-                <label>模板类型
-                  <select id="notificationTemplateInput">
-                    <option value="render_completed">渲染完成</option>
-                    <option value="render_timeout">超时提醒</option>
-                    <option value="test">测试消息</option>
-                  </select>
-                </label>
-                <label>字段分隔符
-                  <select id="notificationSeparatorInput">
-                    <option value=" | ">竖线分隔（|）</option>
-                    <option value=" - ">短横线分隔（-）</option>
-                    <option value=" / ">斜杠分隔（/）</option>
-                    <option value=" · ">圆点分隔（·）</option>
-                  </select>
-                </label>
-                <label class="checkbox-row"><input id="notificationShowLabelsInput" type="checkbox">显示字段名</label>
-                <button class="primary-btn" id="notificationSaveBtn">保存通知设置</button>
-                <button class="ghost-btn" id="notificationResetBtn">恢复当前模板默认</button>
-                <div class="notification-preview">
-                  <p class="eyebrow">预览</p>
-                  <div id="notificationPreview">渲染完成 | home | 底座.c4d</div>
-                </div>
-              </div>
+      <section class="settings-panel" data-settings-content="channels">
+        <div class="panel-intro"><p class="eyebrow">通知通道</p><h3>通道编辑器</h3></div>
+        <div class="channel-editor">
+          <div class="channel-list-box" id="channelListBox"></div>
+          <div class="channel-form compact-form">
+            <label>通道名称<input id="channelNameInput" type="text"></label>
+            <label>通道类型<select id="channelTypeInput"></select></label>
+            <label><span id="channelEndpointLabel">Webhook / SendKey</span><input id="channelEndpointInput" type="text"><small class="form-help" id="channelEndpointHint"></small></label>
+            <label class="checkbox-row"><input id="channelEnabledInput" type="checkbox">启用此通道</label>
+            <div class="button-row">
+              <button class="ghost-btn" id="newChannelBtn">新建</button>
+              <button class="ghost-btn" id="deleteChannelBtn">删除</button>
+              <button class="primary-btn" id="saveChannelBtn">保存通道</button>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="page" id="history-page">
-        <div class="card single-pane">
-          <p class="eyebrow">通知记录</p>
-          <h3>历史消息</h3>
-          <div class="records-sheet" id="historyText"></div>
+      <section class="settings-panel" data-settings-content="notification">
+        <div class="panel-intro with-badge">
+          <div><p class="eyebrow">通知内容</p><h3>通知信息编排</h3></div>
+          <span class="dirty-badge" id="notificationDirtyBadge">未保存修改</span>
         </div>
-      </section>
-
-      <section class="page" id="logs-page">
-        <div class="card single-pane">
-          <div class="section-head">
-            <div><p class="eyebrow">诊断</p><h3>运行日志</h3></div>
-            <button class="ghost-btn" id="reloadLogsBtn">刷新日志</button>
+        <p class="form-note">分别配置渲染完成、超时提醒和测试消息的通知内容。</p>
+        <div class="notification-layout">
+          <div class="notification-fields" id="notificationFields"></div>
+          <div class="notification-controls compact-form">
+            <label>模板类型
+              <select id="notificationTemplateInput">
+                <option value="render_completed">渲染完成</option>
+                <option value="render_timeout">超时提醒</option>
+                <option value="test">测试消息</option>
+              </select>
+            </label>
+            <label>字段分隔符
+              <select id="notificationSeparatorInput">
+                <option value=" | ">竖线分隔（|）</option>
+                <option value=" - ">短横线分隔（-）</option>
+                <option value=" / ">斜杠分隔（/）</option>
+                <option value=" · ">圆点分隔（·）</option>
+              </select>
+            </label>
+            <label class="checkbox-row"><input id="notificationShowLabelsInput" type="checkbox">显示字段名</label>
+            <button class="primary-btn" id="notificationSaveBtn">保存通知设置</button>
+            <button class="ghost-btn" id="notificationResetBtn">恢复当前模板默认</button>
+            <div class="notification-preview">
+              <p class="eyebrow">预览</p>
+              <div id="notificationPreview">渲染完成 | home | 底座.c4d</div>
+            </div>
           </div>
-          <div class="records-sheet" id="logsText"></div>
         </div>
       </section>
-    </main>
-  </div>
+    </div>
+  </dialog>
+
+  <dialog class="app-modal detail-modal" id="historyModal">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div><p class="eyebrow">通知记录</p><h2>历史消息</h2></div>
+        <button class="close-btn" data-close-dialog="historyModal" aria-label="关闭历史消息">×</button>
+      </header>
+      <div class="records-sheet" id="historyText"></div>
+    </div>
+  </dialog>
+
+  <dialog class="app-modal detail-modal" id="logsModal">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div><p class="eyebrow">诊断</p><h2>运行日志</h2></div>
+        <div class="modal-head-actions">
+          <button class="ghost-btn" id="reloadLogsBtn">刷新日志</button>
+          <button class="close-btn" data-close-dialog="logsModal" aria-label="关闭运行日志">×</button>
+        </div>
+      </header>
+      <div class="records-sheet" id="logsText"></div>
+    </div>
+  </dialog>
 
   <div class="toast" id="toast"></div>
-
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
