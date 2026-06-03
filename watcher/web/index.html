@@ -176,9 +176,9 @@
       <section class="settings-panel active" data-settings-content="basic">
         <div class="panel-intro"><p class="eyebrow">基础设置</p><h3>机器与运行参数</h3></div>
         <div class="settings-form compact-form">
-          <label>机器名称<input id="machineNameInput" type="text"></label>
-          <label>超时阈值（秒）<input id="timeoutInput" type="number" min="1"></label>
-          <label>轮询间隔（秒）<input id="pollInput" type="number" min="1"></label>
+          <label><span class="field-label required">机器名称</span><input id="machineNameInput" type="text" placeholder="例如：home、render-01、办公室A机"><small class="form-help">用于区分多台电脑，通知里会显示这个名称。</small></label>
+          <label><span class="field-label required">超时阈值（秒）</span><input id="timeoutInput" type="number" min="1" placeholder="例如：1800"><small class="form-help">单帧渲染超过这个时间后，会发送一次超时提醒。</small></label>
+          <label><span class="field-label">轮询间隔（秒）</span><input id="pollInput" type="number" min="1"><small class="form-help">默认 2 秒即可；数值越小，检查越频繁。</small></label>
           <label class="checkbox-row"><input id="autostartInput" type="checkbox">随 Windows 自动启动</label>
           <button class="primary-btn" id="saveConfigBtn">保存基础设置</button>
         </div>
@@ -189,9 +189,9 @@
         <div class="channel-editor">
           <div class="channel-list-box" id="channelListBox"></div>
           <div class="channel-form compact-form">
-            <label>通道名称<input id="channelNameInput" type="text"></label>
-            <label>通道类型<select id="channelTypeInput"></select></label>
-            <label><span id="channelEndpointLabel">Webhook / SendKey</span><input id="channelEndpointInput" type="text"><small class="form-help" id="channelEndpointHint"></small></label>
+            <label><span class="field-label required">通道名称</span><input id="channelNameInput" type="text" placeholder="例如：飞书通知、Server酱、Slack"><small class="form-help">只用于本地识别，建议写成你能一眼看懂的名称。</small></label>
+            <label><span class="field-label required">通道类型</span><select id="channelTypeInput"></select><small class="form-help">选择你要接收通知的平台。</small></label>
+            <label><span class="field-label required" id="channelEndpointLabel">Webhook / SendKey</span><input id="channelEndpointInput" type="text"><small class="form-help" id="channelEndpointHint"></small></label>
             <label class="checkbox-row"><input id="channelEnabledInput" type="checkbox">启用此通道</label>
             <div class="button-row">
               <button class="ghost-btn" id="newChannelBtn">新建</button>

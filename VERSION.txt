@@ -1,5 +1,5 @@
 Tongzhi Render Notifier
-Version: v2.0.0
-Release Date: 2026-06-02
+Version: v2.1.0
+Release Date: 2026-06-03
 
-This version adds Slack and Gotify support and introduces the simplified card-based Web UI.
+This version improves first-run setup guidance and fixes machine name preview display in notification templates.

@@ -167,6 +167,8 @@ h3{font-size:1.05rem;font-weight:700}
 .panel-intro{margin-bottom:13px}
 .compact-form{display:flex;flex-direction:column;gap:11px}
 .compact-form label{display:flex;flex-direction:column;gap:7px;font-size:.87rem;font-weight:700}
+.field-label{display:inline-flex;align-items:center;gap:4px}
+.field-label.required::after{content:"*";color:#d9504f;font-weight:700}
 .compact-form input,.compact-form select{
   width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fbfbfb;font-weight:600
 }

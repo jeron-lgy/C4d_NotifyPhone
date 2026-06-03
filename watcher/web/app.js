@@ -161,26 +161,31 @@ const CHANNEL_TYPE_OPTIONS = {
     label: "Feishu Webhook",
     endpointLabel: "Webhook \u5730\u5740",
     endpointHint: "\u7c98\u8d34\u98de\u4e66\u7fa4\u673a\u5668\u4eba\u7684 Webhook \u5730\u5740\u3002",
+    endpointPlaceholder: "https://open.feishu.cn/open-apis/bot/v2/hook/...",
   },
   serverchan: {
     label: "ServerChan",
     endpointLabel: "SendKey \u6216\u63a5\u53e3\u5730\u5740",
     endpointHint: "\u586b\u5199 Server\u9171 SendKey\uff0c\u6216\u5b8c\u6574\u7684\u53d1\u9001\u63a5\u53e3\u5730\u5740\u3002",
+    endpointPlaceholder: "SCT... 或 https://sctapi.ftqq.com/....send",
   },
   slack_webhook: {
     label: "Slack Webhook",
     endpointLabel: "Webhook \u5730\u5740",
     endpointHint: "\u7c98\u8d34 Slack Incoming Webhook \u5730\u5740\u3002",
+    endpointPlaceholder: "https://hooks.slack.com/services/...",
   },
   gotify: {
     label: "Gotify",
     endpointLabel: "Gotify \u6d88\u606f\u63a5\u53e3\u5730\u5740",
     endpointHint: "\u586b\u5199\u5b8c\u6574\u5730\u5740\uff0c\u4f8b\u5982 https://gotify.example/message?token=...\u3002",
+    endpointPlaceholder: "https://gotify.example/message?token=...",
   },
   generic_webhook: {
     label: "Generic Webhook",
     endpointLabel: "Webhook \u5730\u5740",
     endpointHint: "\u7c98\u8d34\u63a5\u6536 JSON \u6d88\u606f\u7684\u901a\u7528 Webhook \u5730\u5740\u3002",
+    endpointPlaceholder: "https://example.com/webhook",
   },
 };
 
@@ -233,6 +238,7 @@ function updateChannelEndpointHelp(value) {
   const option = CHANNEL_TYPE_OPTIONS[value] || CHANNEL_TYPE_OPTIONS.generic_webhook;
   byId("channelEndpointLabel").textContent = option.endpointLabel;
   byId("channelEndpointHint").textContent = option.endpointHint;
+  byId("channelEndpointInput").placeholder = option.endpointPlaceholder || "";
 }
 
 function localizeRenderMode(value) {
@@ -282,6 +288,19 @@ function currentNotificationTemplate() {
   return state.config.notification.templates[state.notificationTemplate];
 }
 
+function currentMachineNameSample() {
+  const input = byId("machineNameInput");
+  const inputValue = input?.value?.trim();
+  return inputValue || state.config?.machine_name || TEXT.unnamedMachine;
+}
+
+function notificationSampleValue(fieldDef) {
+  if (fieldDef.key === "machine_name") {
+    return currentMachineNameSample();
+  }
+  return fieldDef.samples[state.notificationTemplate] || fieldDef.samples.render_completed;
+}
+
 function buildNotificationPreview() {
   const template = currentNotificationTemplate();
   const labels = Object.fromEntries(NOTIFICATION_FIELDS.map((item) => [item.key, item.label]));
@@ -289,7 +308,7 @@ function buildNotificationPreview() {
     .map((field) => {
       const def = NOTIFICATION_FIELDS.find((item) => item.key === field);
       if (!def) return "";
-      const sample = def.samples[state.notificationTemplate] || def.samples.render_completed;
+      const sample = notificationSampleValue(def);
       return template.show_labels ? `${labels[field]}: ${sample}` : sample;
     })
     .filter(Boolean);
@@ -516,7 +535,7 @@ function renderNotificationEditor() {
           <input type="checkbox" data-field-toggle="${item.key}" ${enabled ? "checked" : ""}>
           ${item.label}
         </label>
-        <span>${item.samples[state.notificationTemplate] || item.samples.render_completed}</span>
+        <span>${notificationSampleValue(item)}</span>
       </div>
       <div class="notification-field-actions">
         <button class="icon-btn" data-field-up="${item.key}" ${!enabled || selectedIndex <= 0 ? "disabled" : ""}>↑</button>
@@ -789,6 +808,9 @@ async function runTick() {
 
 function bindEvents() {
   byId("saveConfigBtn").addEventListener("click", saveConfig);
+  byId("machineNameInput").addEventListener("input", () => {
+    if (state.config) renderNotificationEditor();
+  });
   byId("notificationSaveBtn").addEventListener("click", saveConfig);
   byId("saveChannelBtn").addEventListener("click", saveChannel);
   byId("deleteChannelBtn").addEventListener("click", deleteChannel);
