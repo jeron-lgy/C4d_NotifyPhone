@@ -28,15 +28,15 @@
 
 <table>
    <tr>
-      <td><img src="image.png" width="1200"></td>
-      
+      <td><img src="docs/readme-assets/image.png" width="1200"></td>
+
    </tr>
 </table>
 <table>
    <tr>
-   <td><img src="image-1.png" width="800"></td>
-      <td><img src="image-2.png" width="800"></td>
-      <td><img src="image-3.png" width="800"></td>
+   <td><img src="docs/readme-assets/image-1.png" width="800"></td>
+      <td><img src="docs/readme-assets/image-2.png" width="800"></td>
+      <td><img src="docs/readme-assets/image-3.png" width="800"></td>
    </tr>
 </table>
 ## 主要功能
