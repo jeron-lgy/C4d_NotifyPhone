@@ -86,7 +86,7 @@
   ![飞书机器人创建示意](docs/readme-assets/image-3.png)
 
   这里选择 `feishu webhook`，直接复制链接到配置界面，保存设置就可以了。
-  ![alt text](image-4.png)
+  ![alt text](docs/readme-assets/image-4.png)
 
 </details>
 
