@@ -83,8 +83,6 @@
 
   同样只需要复制 API Key 就可以收到通知。
 
-  ![Server酱配置示意](docs/readme-assets/image-5.png)
-
 - Slack Incoming Webhook
 
   在 Slack 应用中启用 Incoming Webhooks，复制工作区生成的 Webhook 地址，在通道类型中选择 `Slack Webhook`。
